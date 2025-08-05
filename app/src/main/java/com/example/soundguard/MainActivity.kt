@@ -9,7 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-
+import android.content.Intent
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
+
         }
 
         val Registerlabel: TextView = findViewById(R.id.register_lable)
@@ -26,6 +27,13 @@ class MainActivity : AppCompatActivity() {
         val UserGmail: EditText = findViewById(R.id.user_gmail)
         val UserPassword: EditText = findViewById(R.id.user_password)
         val RegisterButton: Button = findViewById(R.id.register_button)
+        val LinkToAuth: TextView = findViewById(R.id.link_to_auth)
+
+        LinkToAuth.setOnClickListener {
+            val intent = Intent(this, AuthActivity::class.java)
+            startActivity(intent)
+        }
+
 
         RegisterButton.setOnClickListener {
             val login = UserLogin.text.toString().trim()
@@ -33,11 +41,9 @@ class MainActivity : AppCompatActivity() {
             val password = UserPassword.text.toString().trim()
 
             if(login == "" || gmail == "" || password == "")
-                Toast.makeText(this, "Please fill out everything including password, gmail and login!",
-                    Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Please fill out everything including password, gmail and login!", Toast.LENGTH_LONG).show()
             else {
                 val user = User(login, gmail, password)
-
                 val db = DbHelper(this, null)
                 db.addUser(user)
                 Toast.makeText(this, "Registration Successful! Login: $login", Toast.LENGTH_LONG).show()
