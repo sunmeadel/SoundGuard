@@ -36,29 +36,38 @@ class AuthActivity : AppCompatActivity() {
         }
 
         RegisterButton.setOnClickListener {
-            val intent = Intent(this, SoundTest::class.java)
-            startActivity(intent)
-        }
-
-
-        RegisterButton.setOnClickListener {
             val login = UserLogin.text.toString().trim()
             val password = UserPassword.text.toString().trim()
 
-            if(login == "" || password == "")
-                Toast.makeText(this, "Please fill out everything including password, gmail and login!", Toast.LENGTH_LONG).show()
-            else {
-
+            if (login.isEmpty() || password.isEmpty()) {
+                Toast.makeText(
+                    this,
+                    "Please fill out everything including password, gmail and login!",
+                    Toast.LENGTH_LONG
+                ).show()
+            } else {
                 val db = DbHelper(this, null)
-                val areAuth = db.getUser(login, password)      // The function "getUser" outputs a boolean value(True/False), therefore initiating conditions below
+                val areAuth = db.getUser(login, password) // true = user found
 
-                if(areAuth) {  // If the function "getUser" is true = the user was found in the DB
-                    Toast.makeText(this, "User $login is successfully authorized", Toast.LENGTH_LONG).show()
+                if (areAuth) {
+                    Toast.makeText(
+                        this,
+                        "User $login is successfully authorized",
+                        Toast.LENGTH_LONG
+                    ).show()
                     UserLogin.text.clear()
                     UserPassword.text.clear()
-                } else  // If the function "getUser" is false = the user was not found in the DB
-                    Toast.makeText(this, "Login/password is incorrect, try again", Toast.LENGTH_LONG).show()
 
+                    // Redirect to SoundTest
+                    val intent = Intent(this, SoundTest::class.java)
+                    startActivity(intent)
+                } else {
+                    Toast.makeText(
+                        this,
+                        "Login/password is incorrect, try again",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
             }
         }
     }
