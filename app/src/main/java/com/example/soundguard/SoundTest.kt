@@ -17,6 +17,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import kotlin.math.log10
 import kotlin.math.sqrt
+import com.example.soundguard.VisualizerView
 
 class SoundTest : AppCompatActivity() {
 
@@ -27,6 +28,11 @@ class SoundTest : AppCompatActivity() {
     private var isMeasuring = false
     private var audioRecord: AudioRecord? = null
     private val sampleRate = 44100 // Hz
+
+    // Reference to our custom visualizer view
+    private lateinit var visualizerView: VisualizerView
+    private lateinit var soundLevelText: TextView
+    private lateinit var soundTestButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,7 +45,11 @@ class SoundTest : AppCompatActivity() {
             insets
         }
 
-        val soundTestButton: Button = findViewById(R.id.sound_test_button)
+        // Initialize UI elements
+        visualizerView = findViewById(R.id.sound_visualizer)
+        soundLevelText = findViewById(R.id.sound_level_text)
+        soundTestButton = findViewById(R.id.sound_test_button)
+
 
         soundTestButton.setOnClickListener {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -76,7 +86,6 @@ class SoundTest : AppCompatActivity() {
     }
 
     private fun startSoundMeasurement() {
-        // Double-check microphone permission
         if (ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.RECORD_AUDIO
@@ -119,10 +128,11 @@ class SoundTest : AppCompatActivity() {
                 val readCount = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                 if (readCount > 0) {
                     val amplitude = calculateRMS(buffer, readCount)
-                    val db = 20 * log10(amplitude / 32768.0)
+                    val db = 20 * log10(amplitude / 32768.0).coerceAtLeast(0.0)
+
                     runOnUiThread {
-                        findViewById<TextView>(R.id.sound_level_text).text =
-                            "Sound Level: %.2f dB".format(db)
+                        soundLevelText.text = "Sound Level: %.2f dB".format(db)
+                        visualizerView.updateAmplitudes(buffer, readCount, db)
                     }
                 }
             }
@@ -149,23 +159,6 @@ class SoundTest : AppCompatActivity() {
         stopSoundMeasurement()
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
