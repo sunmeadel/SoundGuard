@@ -1,16 +1,18 @@
 package com.example.soundguard
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import android.content.Intent
-import android.widget.Button
-import android.widget.EditText
-import android.widget.Toast
-
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 class AuthActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,7 +31,6 @@ class AuthActivity : AppCompatActivity() {
         val RegisterButton: Button = findViewById(R.id.Log_in_button)
         val LinkToReg: TextView = findViewById(R.id.link_to_reg)
 
-
         LinkToReg.setOnClickListener {
             val intent = Intent(this, RegisterMainActivity::class.java)
             startActivity(intent)
@@ -42,31 +43,46 @@ class AuthActivity : AppCompatActivity() {
             if (login.isEmpty() || password.isEmpty()) {
                 Toast.makeText(
                     this,
-                    "Please fill out everything including password, gmail and login!",
+                    "Please fill out everything including password and login!",
                     Toast.LENGTH_LONG
                 ).show()
             } else {
-                val db = DbHelper(this, null)
-                val areAuth = db.getUser(login, password) // true = user found
+                val db = AppDatabase.getDatabase(this)
+                val repository = HearingHealthRepository(db.userDao(), db.soundMeasurementDao())
 
-                if (areAuth) {
-                    Toast.makeText(
-                        this,
-                        "User $login is successfully authorized",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    UserLogin.text.clear()
-                    UserPassword.text.clear()
+                lifecycleScope.launch {
+                    val user = repository.getUser(login, password)
+                    if (user != null) {
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@AuthActivity,
+                                "User $login is successfully authorized",
+                                Toast.LENGTH_LONG
+                            ).show()
 
-                    // Redirect to SoundTest
-                    val intent = Intent(this, SoundTest::class.java)
-                    startActivity(intent)
-                } else {
-                    Toast.makeText(
-                        this,
-                        "Login/password is incorrect, try again",
-                        Toast.LENGTH_LONG
-                    ).show()
+                            UserLogin.text.clear()
+                            UserPassword.text.clear()
+
+                            // Store user ID in SharedPreferences for future use
+                            val sharedPref = getSharedPreferences("SoundGuardPrefs", Context.MODE_PRIVATE)
+                            with(sharedPref.edit()) {
+                                putLong("CURRENT_USER_ID", user.id)
+                                apply()
+                            }
+
+                            // Redirect to SoundTest
+                            val intent = Intent(this@AuthActivity, SoundTest::class.java)
+                            startActivity(intent)
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(
+                                this@AuthActivity,
+                                "Login/password is incorrect, try again",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
                 }
             }
         }

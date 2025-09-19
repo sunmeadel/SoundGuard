@@ -29,7 +29,7 @@ class SoundTest : AppCompatActivity() {
     private var audioRecord: AudioRecord? = null
     private val sampleRate = 44100 // Hz
 
-    // Reference to our custom visualizer view
+    // Reference to custom visuals
     private lateinit var visualizerView: VisualizerView
     private lateinit var soundLevelText: TextView
     private lateinit var soundTestButton: Button
@@ -50,18 +50,23 @@ class SoundTest : AppCompatActivity() {
         soundLevelText = findViewById(R.id.sound_level_text)
         soundTestButton = findViewById(R.id.sound_test_button)
 
-
         soundTestButton.setOnClickListener {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.RECORD_AUDIO),
-                    REQUEST_RECORD_AUDIO_PERMISSION
-                )
+            if (isMeasuring) {
+                stopSoundMeasurement()
             } else {
-                startSoundMeasurement()
+                if (ContextCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.RECORD_AUDIO
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.RECORD_AUDIO),
+                        REQUEST_RECORD_AUDIO_PERMISSION
+                    )
+                } else {
+                    startSoundMeasurement()
+                }
             }
         }
     }
@@ -122,17 +127,23 @@ class SoundTest : AppCompatActivity() {
         }
 
         isMeasuring = true
+        soundTestButton.text = "Stop Measurement"
 
         Thread {
             while (isMeasuring) {
                 val readCount = audioRecord?.read(buffer, 0, buffer.size) ?: 0
                 if (readCount > 0) {
                     val amplitude = calculateRMS(buffer, readCount)
-                    val db = 20 * log10(amplitude / 32768.0).coerceAtLeast(0.0)
+                    val amplitudeNorm = amplitude / Short.MAX_VALUE.toDouble()
+
+                    // --- Absolute dBFS mapping ---
+                    val dbFs = 20.0 * log10(amplitudeNorm + 1e-9)   // <= 0
+                    val calibrationOffset = 14.0
+                    val dbSPL = (dbFs + 96.0 + calibrationOffset).coerceIn(0.0, 140.0)
 
                     runOnUiThread {
-                        soundLevelText.text = "Sound Level: %.2f dB".format(db)
-                        visualizerView.updateAmplitudes(buffer, readCount, db)
+                        soundLevelText.text = "%.1f dB".format(dbSPL)
+                        visualizerView.updateAmplitudes(buffer, readCount, dbSPL)
                     }
                 }
             }
@@ -152,6 +163,10 @@ class SoundTest : AppCompatActivity() {
         audioRecord?.stop()
         audioRecord?.release()
         audioRecord = null
+
+        soundTestButton.text = "Start Measurement"
+        soundLevelText.text = "Sound Level: -- dB"
+        visualizerView.clear()
     }
 
     override fun onPause() {
@@ -159,11 +174,3 @@ class SoundTest : AppCompatActivity() {
         stopSoundMeasurement()
     }
 }
-
-
-
-
-
-
-
-

@@ -18,6 +18,12 @@ class VisualizerView(context: Context, attrs: AttributeSet? = null) : View(conte
     private var amplitudes = ShortArray(0)
     private var currentColor = Color.parseColor("#9CD08F")
 
+    fun clear() {
+        // Reset your data and redraw
+        amplitudes = ShortArray(0) // or however you store the audio data
+        invalidate()
+    }
+
 
     // buffer = all inputs
     // size = valid inputs
@@ -27,8 +33,11 @@ class VisualizerView(context: Context, attrs: AttributeSet? = null) : View(conte
 
 
         val targetColor = when {
-            db < 88 -> Color.parseColor("#9CD08F") // Safe zone = 80 - 88 dB (green)
-            db < 94 -> Color.parseColor("#FCD581") // Medium zone = 89 - 94 dB (yellow)
+            db < 20 -> Color.parseColor("#9CD08F") // Low
+            db < 40 -> Color.parseColor("#31CB00") // Safe zone
+            db < 60 -> Color.parseColor("#BACB00") // Safe-medium zone
+            db < 80 -> Color.parseColor("#F4FA7F") // Medium zone
+            db < 89 -> Color.parseColor("#FCD581") // Medium zone = 89 - 94 dB (yellow)
             else -> Color.parseColor("#D52941")    // Danger zone = volume > 94dB (red)
         }
 
